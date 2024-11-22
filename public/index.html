@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star_Collector</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+
+    <style>
+        /* 페이지 전체를 Flexbox로 중앙 정렬 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #main-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding-left: 100px;
+        }
+
+        /* 게임 캔버스를 감싸는 div 설정 */
+        #game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 800px;
+            height: 600px; /* 게임 화면 높이 */
+        }
+
+        /* 점수 랭킹 박스 스타일 */
+        #ranking-container {
+            width: 300px; /* 점수 랭킹의 너비 */
+            height: 600px; /* 게임 화면의 높이와 일치 */
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #f9f9f9;
+            box-sizing: border-box; /* 패딩이 박스 크기에 영향을 미치지 않도록 설정 */
+        }
+
+        /* 닉네임을 상단에 고정시키기 위한 스타일 */
+        #nickname-display {
+            font-size: 18px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7); /* 반투명 배경 */
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            margin-bottom: 10px; /* 닉네임과 Top 10 Scores 사이에 여백 추가 */
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+
+        .gold {
+            color: gold; 
+            font-weight: bold;
+            text-shadow: 
+                -0.6px -0.6px 0 #000,  
+                0.6px -0.6px 0 #000,
+                -0.6px 0.6px 0 #000,
+                0.6px 0.6px 0 #000; /* 얇은 검은색 테두리 효과 */
+        }
+        .silver { color: silver; font-weight: bold; 
+            font-weight: bold;
+            text-shadow: 
+                -0.6px -0.6px 0 #000,  
+                0.6px -0.6px 0 #000,
+                -0.6px 0.6px 0 #000,
+                0.6px 0.6px 0 #000; /* 얇은 검은색 테두리 효과 */
+        }
+        .bronze { color: #cd7f32; font-weight: bold; }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 16px;
+            text-align: center;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+         /* 패치 노트 공간 스타일 */
+         #patch-notes {
+            width: 200px;
+            height: 600px; /* 게임 화면 높이와 일치 */
+            background-color: #f4f4f4;
+            border-right: 1px solid #ccc;
+            padding: 20px;
+            box-sizing: border-box; /* 패딩이 박스 크기에 영향을 미치지 않도록 설정 */
+            box-shadow: 2px 0px 5px rgba(0,0,0,0.1); /* 오른쪽으로 살짝 그림자 효과 */
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="patch-notes">
+            <h2>Patch Notes</h2>
+            <p>Version 1.0.1 - 보안을 강화했습니다 이제 무작위 post 요청을 받지 않을겁니다.</p>
+            
+            <!-- 추가로 패치 사항을 여기에 적을 수 있습니다 -->
+        </div>
+        <div id="game-container"></div>
+
+        <div id="ranking-container">
+            <div id="nickname-display"></div> <!-- 닉네임을 표시하는 부분 -->
+
+            <h2>Top 10 Scores</h2>
+            <ul id="ranking-list"></ul>
+            <button class="btn" id="view-rankings">View All Rankings</button>
+            <button class="btn" id="change-nickname">Change Nickname</button> <!-- 닉네임 변경 버튼 -->
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+
+    <script>
+        // 로컬스토리지에 저장된 닉네임을 삭제하고 페이지 새로고침하는 함수
+        function changeNickname() {
+            localStorage.removeItem('playerNickname'); // 닉네임 삭제
+            location.reload(); // 페이지 새로고침
+        }
+
+        // 'Change Nickname' 버튼 클릭 이벤트 설정
+        document.getElementById('change-nickname').addEventListener('click', changeNickname);
+
+        // 'View All Rankings' 버튼 클릭 시 rankings 페이지로 이동
+        document.getElementById('view-rankings').addEventListener('click', function() {
+            window.location.href = '/rankings'; // 랭킹 페이지로 리디렉션
+        });
+
+        // 로컬스토리지에서 닉네임 가져오기
+        function displayNickname() {
+            const nicknameDisplay = document.getElementById('nickname-display');
+            const savedNickname = localStorage.getItem('playerNickname') || 'Player';
+            nicknameDisplay.textContent = `Nickname: ${savedNickname}`;
+        }
+
+        // 닉네임을 표시하는 로직
+        window.onload = function() {
+            displayNickname(); // 닉네임을 표시
+            fetchAndDisplayScores(); // 점수 데이터를 표시
+        };
+
+        // 점수 데이터 가져오는 로직 (기존 코드)
+        async function fetchAndDisplayScores() {
+            try {
+                const response = await fetch('/scores/top10'); 
+                const data = await response.json();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('No scores found or invalid format.');
+                }
+
+                const rankingList = document.getElementById('ranking-list');
+                rankingList.innerHTML = ''; 
+
+                data.forEach((score, index) => {
+                    const listItem = document.createElement('li');
+                    let className = '';
+
+                    // 1등에게 금 효과 및 왕관 이모지 추가
+                    if (index === 0) {
+                        className = 'gold';
+                        listItem.innerHTML = `👑 ${index + 1}. ${score.user_nickname}: ${score.user_score} 점`;
+                    } else if (index === 1) {
+                        className = 'silver'; // 2등에게 은 효과
+                        listItem.innerHTML = `${index + 1}. ${score.user_nickname}: ${score.user_score} 점`;
+                    } else if (index === 2) {
+                        className = 'bronze'; // 3등에게 동 효과
+                        listItem.innerHTML = `${index + 1}. ${score.user_nickname}: ${score.user_score} 점`;
+                    } else {
+                        listItem.innerHTML = `${index + 1}. ${score.user_nickname}: ${score.user_score} 점`;
+                    }
+
+                    listItem.className = className; // 클래스 이름 설정
+                    rankingList.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error('Error fetching scores:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Rankings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh; /* 화면 전체 높이를 기준으로 중앙 정렬 */
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      width: 60%; /* 페이지 너비를 60%로 설정 */
+      max-width: 800px; /* 최대 너비를 800px로 설정 */
+      background-color: white;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 가벼운 그림자 효과 */
+      border-radius: 8px; /* 테두리를 둥글게 설정 */
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f4f4f4;
+    }
+
+    .pagination {
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .pagination button {
+      padding: 10px 15px;
+      margin: 0 5px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    .pagination button.disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    #back-to-game {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      text-decoration: none;
+      text-align: center;
+      border-radius: 5px;
+      width: 150px;
+    }
+
+    #back-to-game:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Game Rankings</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Nickname</th>
+          <th>Score</th>
+          <th>Comment</th>
+        </tr>
+      </thead>
+      <tbody id="ranking-table">
+        <!-- 점수 목록이 여기에 삽입됩니다 -->
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <button id="prev-page" class="disabled">Previous</button>
+      <span id="current-page">Page 1</span>
+      <button id="next-page">Next</button>
+    </div>
+
+    <!-- 게임으로 돌아가는 버튼 추가 -->
+    <a href="/" id="back-to-game">Back to Game</a>
+  </div>
+
+  <script>
+    let currentPage = 1;
+    const limit = 10;  // 한 페이지에 표시할 항목 수
+
+    function loadScores(page) {
+      fetch(`/scores?page=${page}&limit=${limit}`)
+        .then(response => response.json())
+        .then(data => {
+          const tableBody = document.getElementById('ranking-table');
+          const currentPageElement = document.getElementById('current-page');
+          const prevPageButton = document.getElementById('prev-page');
+          const nextPageButton = document.getElementById('next-page');
+
+          // 테이블 초기화
+          tableBody.innerHTML = '';
+
+          // 점수를 표시
+          data.scores.forEach((score, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${(page - 1) * limit + index + 1}</td> <!-- 이 부분에서 페이지 및 인덱스를 다시 확인하세요 -->
+              <td>${score.user_nickname}</td>
+              <td>${score.user_score}</td>
+              <td>${score.comment}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+
+          // 페이지 업데이트
+          currentPageElement.textContent = `Page ${page}`;
+          
+          // 이전 페이지 버튼 활성화/비활성화
+          if (page === 1) {
+            prevPageButton.classList.add('disabled');
+          } else {
+            prevPageButton.classList.remove('disabled');
+          }
+
+          // 다음 페이지 버튼 활성화/비활성화
+          const totalPages = Math.ceil(data.total / limit); // 총 페이지 수 계산
+          if (page >= totalPages) {
+            nextPageButton.classList.add('disabled');
+          } else {
+            nextPageButton.classList.remove('disabled');
+          }
+        })
+        .catch(error => console.error('Error fetching scores:', error));
+    }
+
+    document.getElementById('prev-page').addEventListener('click', () => {
+      const prevPageButton = document.getElementById('prev-page');
+      if (!prevPageButton.classList.contains('disabled') && currentPage > 1) {
+        currentPage--;
+        loadScores(currentPage);
+      }
+    });
+
+    document.getElementById('next-page').addEventListener('click', () => {
+      const nextPageButton = document.getElementById('next-page');
+      if (!nextPageButton.classList.contains('disabled')) {
+        currentPage++;
+        loadScores(currentPage);
+      }
+    });
+
+    // 첫 페이지 로드
+    loadScores(currentPage);
+  </script>
+
+</body>
+</html>
